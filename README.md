@@ -12,7 +12,12 @@ The estimate is whatever field your organisation tracks. That could be story
 points, an hours or days custom field, or Jira's own original estimate or time
 spent. You pick the field once per project.
 
-![jtt calculate, jtt contributions --by day and jtt export, run against a demo Jira project](https://raw.githubusercontent.com/codeonym-oss/jira-time-tracker/main/docs/demo.gif)
+![jtt calculate, jtt contributions --by day and jtt export, run against a simulated Jira site](https://raw.githubusercontent.com/codeonym-oss/jira-time-tracker/main/docs/demo.gif)
+
+Every command is documented, with a recording of its output, in
+[`docs/`](https://github.com/codeonym-oss/jira-time-tracker/tree/main/docs): start at
+[Getting started](https://github.com/codeonym-oss/jira-time-tracker/blob/main/docs/guide/getting-started.md)
+or the [command list](https://github.com/codeonym-oss/jira-time-tracker/blob/main/docs/commands/index.md).
 
 ## Install
 
@@ -160,12 +165,12 @@ uv sync
 uv run pytest
 ```
 
-The tests run the real CLI and HTTP client against a local fake Jira that replays the
-shape of real issue data, with fictional people and issues. See
+The tests run the real CLI and HTTP client against local fake Jira sites with fictional
+people and issues: one replays the shape of real issue data, and a
+[simulated site](https://github.com/codeonym-oss/jira-time-tracker/blob/main/docs/development/simulator.md)
+generates hundreds of issues and checks every report against what it generated. See
 [CONTRIBUTING.md](https://github.com/codeonym-oss/jira-time-tracker/blob/main/CONTRIBUTING.md)
-for the conventions CI enforces, and
-[`docs/demo/`](https://github.com/codeonym-oss/jira-time-tracker/tree/main/docs/demo) to
-re-record the demo above.
+for the conventions CI enforces, the docs site, and re-recording the GIFs.
 
 `legacy/jira_tasks.py` is the single-file script this project grew from, kept
 unchanged.

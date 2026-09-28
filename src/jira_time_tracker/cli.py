@@ -780,8 +780,14 @@ def config_remove(project: Annotated[str, typer.Argument(help="Project key.")]) 
 @config_app.command("calendar")
 @guarded
 def config_calendar(
-    hours_per_day: Annotated[float | None, typer.Option("--hours-per-day", min=0.5, max=24)] = None,
-    days_per_week: Annotated[float | None, typer.Option("--days-per-week", min=0.5, max=7)] = None,
+    hours_per_day: Annotated[
+        float | None,
+        typer.Option("--hours-per-day", min=0.5, max=24, help="Working hours in a day."),
+    ] = None,
+    days_per_week: Annotated[
+        float | None,
+        typer.Option("--days-per-week", min=0.5, max=7, help="Working days in a week."),
+    ] = None,
 ) -> None:
     """Override the working day and week used to convert hours ↔ days ↔ weeks."""
     config, site = logged_in_site()
