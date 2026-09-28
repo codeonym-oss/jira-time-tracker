@@ -145,7 +145,7 @@ lists what a new command needs.
 
 [Read the Docs](https://app.readthedocs.org/) builds and hosts the site from
 `.readthedocs.yaml`: `latest` is `main`, each release tag gets its own version, and `stable`
-is the newest release.
+is the newest release. It is served at <https://docs.codeonym.work/projects/jira-time-tracker/>.
 
 ## Releases
 
