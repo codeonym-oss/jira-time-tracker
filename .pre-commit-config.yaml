@@ -1,0 +1,43 @@
+# Hooks run the tools pinned in uv.lock, so local results match CI.
+# Install all stages: uv run pre-commit install --install-hooks -t pre-commit -t commit-msg -t pre-push
+default_install_hook_types: [pre-commit, commit-msg, pre-push]
+default_stages: [pre-commit]
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-toml
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-merge-conflict
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: uv run --frozen ruff check --fix
+        language: system
+        types_or: [python, pyi]
+      - id: ruff-format
+        name: ruff format
+        entry: uv run --frozen ruff format
+        language: system
+        types_or: [python, pyi]
+      - id: pyright
+        name: pyright
+        entry: uv run --frozen pyright
+        language: system
+        types_or: [python, pyi]
+        pass_filenames: false
+      - id: commit-message
+        name: conventional commit message
+        entry: uv run --frozen cz check --commit-msg-file
+        language: system
+        stages: [commit-msg]
+      - id: branch-name
+        name: branch name <type>/<issue>-<slug>
+        entry: uv run --frozen python scripts/check_branch_name.py
+        language: system
+        stages: [pre-push]
+        pass_filenames: false
+        always_run: true
