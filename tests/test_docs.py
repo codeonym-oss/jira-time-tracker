@@ -70,7 +70,7 @@ def run(args: list[str], url: str) -> None:
 
 
 PAGES = sorted(
-    str(page.relative_to(DOCS).with_suffix(""))
+    page.relative_to(DOCS).with_suffix("").as_posix()
     for page in DOCS.rglob("*.md")
     if "_build" not in page.parts and examples(page)
 )
