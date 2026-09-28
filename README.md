@@ -1,5 +1,10 @@
 # jira-time-tracker
 
+[![PyPI](https://img.shields.io/pypi/v/jira-time-tracker)](https://pypi.org/project/jira-time-tracker/)
+[![Python](https://img.shields.io/pypi/pyversions/jira-time-tracker)](https://pypi.org/project/jira-time-tracker/)
+[![CI](https://github.com/codeonym-oss/jira-time-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/codeonym-oss/jira-time-tracker/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/pypi/l/jira-time-tracker)](https://github.com/codeonym-oss/jira-time-tracker/blob/main/LICENSE)
+
 `jtt` answers one question about a Jira Cloud project: **how much estimated work
 came into being over a period, on which issues, and by whom?**
 
@@ -11,14 +16,24 @@ spent. You pick the field once per project.
 
 ## Install
 
-It needs Python 3.10 or newer and works the same on Linux, macOS and Windows.
+`jtt` is [on PyPI](https://pypi.org/project/jira-time-tracker/). It needs Python 3.10 or
+newer and works the same on Linux, macOS and Windows. Install it as a tool, in its own
+environment, with [uv](https://docs.astral.sh/uv/) or [pipx](https://pipx.pypa.io/):
 
 ```sh
-uv tool install git+https://github.com/codeonym/jira-time-tracker   # or: pipx install git+…
-jtt --help
+uv tool install jira-time-tracker      # or: pipx install jira-time-tracker
+jtt --version
 ```
 
-To install from a local checkout, run `uv tool install .` or `pipx install .`.
+That puts two identical commands on your `PATH`: `jtt` and `jira-time-tracker`. If the
+shell can't find them, run `uv tool update-shell` (or `pipx ensurepath`) and open a new
+terminal. `pip install jira-time-tracker` works too, inside a virtual environment.
+
+To upgrade: `uv tool upgrade jira-time-tracker` or `pipx upgrade jira-time-tracker`.
+Releases and their changes are listed in the [changelog](https://github.com/codeonym-oss/jira-time-tracker/blob/main/CHANGELOG.md).
+
+**Status:** pre-1.0. It targets Jira Cloud (not Server or Data Center), and commands
+or options may still change between minor versions; the changelog says when they do.
 
 ## Getting started
 
@@ -140,12 +155,21 @@ Environment overrides:
 ## Development
 
 ```sh
+git clone https://github.com/codeonym-oss/jira-time-tracker.git && cd jira-time-tracker
 uv sync
 uv run pytest
 ```
 
-The tests run the real CLI and HTTP client against a local fake Jira that
-replays issue data captured from a live site.
+The tests run the real CLI and HTTP client against a local fake Jira that replays the
+shape of real issue data, with fictional people and issues. See
+[CONTRIBUTING.md](https://github.com/codeonym-oss/jira-time-tracker/blob/main/CONTRIBUTING.md)
+for the conventions CI enforces, and
+[`docs/demo/`](https://github.com/codeonym-oss/jira-time-tracker/tree/main/docs/demo) to
+re-record the demo above.
 
 `legacy/jira_tasks.py` is the single-file script this project grew from, kept
 unchanged.
+
+## License
+
+[MIT](https://github.com/codeonym-oss/jira-time-tracker/blob/main/LICENSE)
