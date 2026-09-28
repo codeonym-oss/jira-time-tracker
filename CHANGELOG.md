@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/codeonym-oss/jira-time-tracker/compare/v0.1.0...v0.1.1) (2026-09-28)
+
+
+### Documentation
+
+* show jtt in action with a demo GIF in the README ([#3](https://github.com/codeonym-oss/jira-time-tracker/issues/3)) ([66b12ba](https://github.com/codeonym-oss/jira-time-tracker/commit/66b12ba611490925c9afabc177a50ac0e416e6fe))
+
 ## 0.1.0 (2026-09-28)
 
 
