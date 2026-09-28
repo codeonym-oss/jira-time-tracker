@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/codeonym-oss/jira-time-tracker/compare/v0.1.2...v0.1.3) (2026-09-28)
+
+
+### Documentation
+
+* a docs site with a page, a GIF and a test for every command ([#8](https://github.com/codeonym-oss/jira-time-tracker/issues/8)) ([#9](https://github.com/codeonym-oss/jira-time-tracker/issues/9)) ([9f6a54c](https://github.com/codeonym-oss/jira-time-tracker/commit/9f6a54cb623d394ceffd9adf92c0b8d1d214e3e9))
+
 ## [0.1.2](https://github.com/codeonym-oss/jira-time-tracker/compare/v0.1.1...v0.1.2) (2026-09-28)
 
 
