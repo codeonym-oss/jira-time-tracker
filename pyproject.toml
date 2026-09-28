@@ -35,6 +35,7 @@ classifiers = [
 
 [project.urls]
 Homepage = "https://github.com/codeonym-oss/jira-time-tracker"
+Documentation = "https://docs.codeonym.work/projects/jira-time-tracker/"
 Repository = "https://github.com/codeonym-oss/jira-time-tracker"
 Issues = "https://github.com/codeonym-oss/jira-time-tracker/issues"
 Changelog = "https://github.com/codeonym-oss/jira-time-tracker/blob/main/CHANGELOG.md"

@@ -3,6 +3,7 @@
 [![PyPI](https://img.shields.io/pypi/v/jira-time-tracker)](https://pypi.org/project/jira-time-tracker/)
 [![Python](https://img.shields.io/pypi/pyversions/jira-time-tracker)](https://pypi.org/project/jira-time-tracker/)
 [![CI](https://github.com/codeonym-oss/jira-time-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/codeonym-oss/jira-time-tracker/actions/workflows/ci.yml)
+[![Docs](https://app.readthedocs.org/projects/jira-time-tracker/badge/?version=stable)](https://docs.codeonym.work/projects/jira-time-tracker/)
 [![License: MIT](https://img.shields.io/pypi/l/jira-time-tracker)](https://github.com/codeonym-oss/jira-time-tracker/blob/main/LICENSE)
 
 `jtt` answers one question about a Jira Cloud project: **how much estimated work
@@ -14,10 +15,9 @@ spent. You pick the field once per project.
 
 ![jtt calculate, jtt contributions --by day and jtt export, run against a simulated Jira site](https://raw.githubusercontent.com/codeonym-oss/jira-time-tracker/main/docs/demo.gif)
 
-Every command is documented, with a recording of its output, in
-[`docs/`](https://github.com/codeonym-oss/jira-time-tracker/tree/main/docs): start at
-[Getting started](https://github.com/codeonym-oss/jira-time-tracker/blob/main/docs/guide/getting-started.md)
-or the [command list](https://github.com/codeonym-oss/jira-time-tracker/blob/main/docs/commands/index.md).
+**[Documentation](https://docs.codeonym.work/projects/jira-time-tracker/)**: every command has a page with a recording of its
+output. Start at [Getting started](https://docs.codeonym.work/projects/jira-time-tracker/en/stable/guide/getting-started/)
+or the [command list](https://docs.codeonym.work/projects/jira-time-tracker/en/stable/commands/).
 
 ## Install
 
@@ -65,6 +65,8 @@ jtt calculate --period last-week
    `jtt init -p DEMO --field customfield_10016 --unit points`.
 
 ## Commands
+
+Each command's options and examples are on its [docs page](https://docs.codeonym.work/projects/jira-time-tracker/en/stable/commands/).
 
 | Command | What it does |
 |---|---|
@@ -170,7 +172,7 @@ people and issues: one replays the shape of real issue data, and a
 [simulated site](https://github.com/codeonym-oss/jira-time-tracker/blob/main/docs/development/simulator.md)
 generates hundreds of issues and checks every report against what it generated. See
 [CONTRIBUTING.md](https://github.com/codeonym-oss/jira-time-tracker/blob/main/CONTRIBUTING.md)
-for the conventions CI enforces, the docs site, and re-recording the GIFs.
+for the conventions CI enforces, building the [docs site](https://docs.codeonym.work/projects/jira-time-tracker/), and re-recording the GIFs.
 
 `legacy/jira_tasks.py` is the single-file script this project grew from, kept
 unchanged.
