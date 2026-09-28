@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/codeonym-oss/jira-time-tracker/compare/v0.1.1...v0.1.2) (2026-09-28)
+
+
+### Documentation
+
+* install from PyPI in the README ([#6](https://github.com/codeonym-oss/jira-time-tracker/issues/6)) ([ce9bef8](https://github.com/codeonym-oss/jira-time-tracker/commit/ce9bef816db69b948b7863da5a6298c35c8f326d))
+
 ## [0.1.1](https://github.com/codeonym-oss/jira-time-tracker/compare/v0.1.0...v0.1.1) (2026-09-28)
 
 
