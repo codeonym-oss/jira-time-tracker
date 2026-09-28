@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/codeonym-oss/jira-time-tracker/compare/v0.1.3...v0.1.4) (2026-09-28)
+
+
+### Documentation
+
+* link the docs site from the README, PyPI and CONTRIBUTING ([#13](https://github.com/codeonym-oss/jira-time-tracker/issues/13)) ([54e44f9](https://github.com/codeonym-oss/jira-time-tracker/commit/54e44f9e184626cf31bd7cdaafbd19a524d171b7))
+
 ## [0.1.3](https://github.com/codeonym-oss/jira-time-tracker/compare/v0.1.2...v0.1.3) (2026-09-28)
 
 
