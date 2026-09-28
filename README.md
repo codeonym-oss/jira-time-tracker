@@ -7,33 +7,7 @@ The estimate is whatever field your organisation tracks. That could be story
 points, an hours or days custom field, or Jira's own original estimate or time
 spent. You pick the field once per project.
 
-```
-$ jtt contributions --from 2026-09-24 --to 2026-09-30 --by day
-╭─ Contributions · DEMO ─────────────────────────────────────────────────────────╮
-│  Field  Story point estimate (customfield_10016, points)                      │
-│ Period  Thu 24 Sep 2026 included → Wed 30 Sep 2026 excluded  · 6 days         │
-│ Credit  each change goes to whoever held the issue when it happened           │
-╰───────────────────────────────────────────────────────────────────────────────╯
- Person          Net SP   Added   Share   Issues    Created       Done
- ─────────────────────────────────────────────────────────────────────────────────
- Alice Martin   +16 SP   16 SP    100%        3   4 (2 SP)   2 (8 SP)   ████████
-
-Per day
- When          Net SP
- ─────────────────────────────────────────
- Thu 24 Sep     +5 SP   ██████████████████
- Fri 25 Sep   +8.5 SP   ██████████████████████████████
- Sat 26 Sep        ±0
- …
-╭─ Statistics ───────────────────────────────────────────────────────────────────╮
-│         Net added  +16 SP                                                      │
-│ Per changed issue  5.33 SP average over 3                                      │
-│           Biggest  DEMO-729 +8 SP Share a published report through a public link │
-│    Done in period  2 issues (8 SP)                                             │
-│       Daily trend  ▅█  ▂                                                       │
-│       Busiest day  Fri 25 Sep (8.5 SP, 3 active days)                          │
-╰────────────────────────────────────────────────────────────────────────────────╯
-```
+![jtt calculate, jtt contributions --by day and jtt export, run against a demo Jira project](https://raw.githubusercontent.com/codeonym-oss/jira-time-tracker/main/docs/demo.gif)
 
 ## Install
 
