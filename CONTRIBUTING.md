@@ -22,8 +22,14 @@ The hooks run the same checks as CI:
 | `pre-push`   | the branch name follows [`<type>/<issue>-<slug>`](#branches) |
 
 Run the full suite with `uv run pytest`; a coverage below `fail_under` in `pyproject.toml` fails.
-The tests never reach a real Jira: `tests/fake_jira.py` serves anonymised issue data from a
-local HTTP server, and every test gets its own config directory and a file credential store.
+The tests never reach a real Jira, and every test gets its own config directory and a file
+credential store. They use two local fake sites:
+
+- `tests/fake_jira.py` serves a few issues shaped like real data, for the precise cases.
+- `tests/jira_sim` generates a whole site from a seed (people, projects, hundreds of issues and
+  their histories) and knows what each report should say; `tests/test_commands.py` holds `jtt`
+  to it. See [the simulated Jira](docs/development/simulator.md).
+
 Keep test data fictional, since the repository is public. To test another Python version:
 `uv run --isolated --python 3.14 pytest`.
 
@@ -108,6 +114,38 @@ Fixes #5
 ```
 
 Keep a PR to one issue. Fill in the PR template's checklist.
+
+## Documentation
+
+The docs site is built with [Sphinx](https://www.sphinx-doc.org/), the
+[Shibuya](https://shibuya.lepture.com/) theme and [MyST](https://myst-parser.readthedocs.io/)
+Markdown from `docs/`. Preview it, rebuilt on every save, at http://127.0.0.1:8000:
+
+```sh
+uv run --isolated --python 3.13 --group docs sphinx-autobuild -b dirhtml docs docs/_build/html
+```
+
+Sphinx 9 needs Python 3.12+, hence `--python 3.13`; `--isolated` keeps it out of `.venv`.
+CI builds the site with `-W`, so broken links and references fail the build.
+
+**Every command has a page** in `docs/commands/`, with examples, a GIF of its output and its
+options. The options block is generated from the CLI: after changing an option or a help text,
+run `uv run python scripts/cli_docs.py`. The GIFs are recorded with
+[VHS](https://github.com/charmbracelet/vhs) in Docker, from the tapes in `docs/tapes/`,
+against the simulated Jira; re-record the ones whose output changed:
+
+```sh
+docs/tapes/record.sh calculate export   # or no names, for all of them
+```
+
+`tests/test_docs.py` checks that every command has a page, a tape and a GIF, that the options
+match the CLI, and runs every `$ jtt …` line of the docs' `console` blocks against the
+simulated Jira. [Writing a command page](docs/development/simulator.md#writing-a-command-page)
+lists what a new command needs.
+
+[Read the Docs](https://app.readthedocs.org/) builds and hosts the site from
+`.readthedocs.yaml`: `latest` is `main`, each release tag gets its own version, and `stable`
+is the newest release.
 
 ## Releases
 

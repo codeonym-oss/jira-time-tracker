@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from tests import fake_jira
+from tests import fake_jira, jira_sim
 
 
 @pytest.fixture(scope="session")
@@ -21,3 +21,12 @@ def isolated_home(tmp_path, monkeypatch):
     monkeypatch.delenv("JTT_API_TOKEN", raising=False)
     monkeypatch.setenv("COLUMNS", "200")
     return tmp_path
+
+
+@pytest.fixture(scope="session")
+def sim():
+    """The simulated Jira site (tests/jira_sim), shared by the tests that only read it."""
+    server = jira_sim.start()
+    yield server
+    server.shutdown()
+    server.server_close()

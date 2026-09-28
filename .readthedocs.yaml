@@ -1,0 +1,25 @@
+# Read the Docs builds the docs site from this file: `latest` from main, a version per release
+# tag (the newest is `stable`), and a preview of each pull request.
+# Served at https://docs.codeonym.work/projects/jira-time-tracker/, a subproject of the codeonym
+# docs hub.
+version: 2
+
+build:
+  os: ubuntu-24.04
+  tools:
+    python: "3.13"
+  jobs:
+    pre_create_environment:
+      - asdf plugin add uv
+      - asdf install uv latest
+      - asdf global uv latest
+    # Sphinx 9 needs 3.12+: UV_PYTHON overrides the repo's .python-version.
+    create_environment:
+      - UV_PYTHON=3.13 uv venv "${READTHEDOCS_VIRTUALENV_PATH}"
+    install:
+      - UV_PYTHON=3.13 UV_PROJECT_ENVIRONMENT="${READTHEDOCS_VIRTUALENV_PATH}" uv sync --frozen --no-default-groups --group docs
+
+sphinx:
+  configuration: docs/conf.py
+  builder: dirhtml
+  fail_on_warning: true
