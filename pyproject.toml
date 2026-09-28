@@ -1,0 +1,110 @@
+[project]
+name = "jira-time-tracker"
+version = "0.0.0"
+description = "Track how much estimated work (story points, hours, days…) came into being in a Jira project over a period, per issue and per person."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "codeonym-oss" }]
+requires-python = ">=3.10"
+dependencies = [
+    "keyring>=24",
+    "platformdirs>=4",
+    "requests>=2.31",
+    "rich>=13",
+    "typer>=0.12",
+]
+keywords = ["jira", "atlassian", "story-points", "estimates", "time-tracking", "cli"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Office/Business",
+    "Topic :: Software Development :: Bug Tracking",
+    "Typing :: Typed",
+]
+
+[project.urls]
+Homepage = "https://github.com/codeonym-oss/jira-time-tracker"
+Repository = "https://github.com/codeonym-oss/jira-time-tracker"
+Issues = "https://github.com/codeonym-oss/jira-time-tracker/issues"
+Changelog = "https://github.com/codeonym-oss/jira-time-tracker/blob/main/CHANGELOG.md"
+
+[project.scripts]
+jtt = "jira_time_tracker.cli:app"
+jira-time-tracker = "jira_time_tracker.cli:app"
+
+[build-system]
+requires = ["uv_build>=0.8.22,<0.13"]
+build-backend = "uv_build"
+
+[dependency-groups]
+test = [
+    "pytest>=8",
+    "pytest-cov>=7",
+]
+dev = [
+    {include-group = "test"},
+    "commitizen>=4.8",
+    "pre-commit>=4.3",
+    "pyright>=1.1.400",
+    "ruff>=0.16",
+    "types-requests>=2.31",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+# The pre-project script, kept verbatim.
+extend-exclude = ["legacy"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W", "F", "I", "B", "UP", "SIM", "RUF", "C4", "PT", "PIE", "RET",
+    "TC", "PERF", "N", "D",
+]
+ignore = [
+    "D100", "D104", "D105", "D107",  # module/package/magic/__init__ docstrings
+    "D203", "D213",                  # pick D211 + D212 (summary on the first line)
+    "RUF001", "RUF002", "RUF003",    # the terminal UI deliberately uses →, ×, ±, ★ and friends
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["D"]
+# Typer reads the command signatures' annotations at runtime, so their imports must stay real.
+"src/jira_time_tracker/cli.py" = ["TC"]
+
+[tool.commitizen]
+# Only used to validate messages (commit-msg hook + CI); versions and changelog are release-please's job.
+name = "cz_conventional_commits"
+allowed_prefixes = ["Merge", "Revert", "fixup!", "squash!"]
+
+[tool.pyright]
+include = ["src", "tests", "scripts"]
+pythonVersion = "3.10"
+typeCheckingMode = "standard"
+
+[tool.pytest.ini_options]
+addopts = ["--strict-markers", "--strict-config", "-ra", "--cov", "--cov-report=term-missing"]
+testpaths = ["tests"]
+xfail_strict = true
+filterwarnings = ["error"]
+
+[tool.coverage.run]
+source = ["jira_time_tracker"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+skip_covered = true
+exclude_also = ["if TYPE_CHECKING:", "@overload", "raise NotImplementedError", "if __name__ == .__main__.:"]
