@@ -1,0 +1,44 @@
+name: Bug report
+description: Something in jtt doesn't work as documented.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This repository is public. Leave out API tokens, and replace real names, emails,
+        account ids, project keys and issue titles with made-up ones.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Command
+      description: The `jtt` command you ran, with its options.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Output or traceback
+      description: Rerunning with `-vvv` adds the JQL and the HTTP trace, which often helps.
+      render: text
+  - type: input
+    id: version
+    attributes:
+      label: jtt version
+      placeholder: jtt --version
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: OS and Python version
+      placeholder: Windows 11, Python 3.12.4
+    validations:
+      required: true

@@ -1,0 +1,37 @@
+name: pr-title
+
+on:
+  pull_request_target:
+    types: [opened, edited, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  pr-title:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            perf
+            build
+            docs
+            refactor
+            test
+            ci
+            chore
+            revert
+          requireScope: false
+          # Squash merge turns the title into main's commit and changelog entry, so it carries the issue key.
+          subjectPattern: ^.+ \(#[1-9]\d*\)$
+          subjectPatternError: |
+            The PR title must end with the issue key, e.g. "feat: export contributions as CSV (#5)".
+          # Bot PRs (release-please, Dependabot) have no issue.
+          ignoreLabels: |
+            autorelease: pending
+            dependencies

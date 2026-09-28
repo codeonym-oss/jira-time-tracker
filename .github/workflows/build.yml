@@ -1,0 +1,52 @@
+name: build
+
+# Builds the sdist and wheel, validates their metadata, and smoke-tests an install of each in a
+# clean environment. Called by CI (every PR) and by the release workflow (before publishing).
+
+on:
+  workflow_call:
+    inputs:
+      dev:
+        description: Build a X.Y.(Z+1).devN pre-release (N = the caller's run number) for TestPyPI.
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - name: Set dev version
+        if: inputs.dev
+        run: |
+          base=$(uv version --short)
+          IFS=. read -r major minor patch <<< "$base"
+          uv version --frozen "$major.$minor.$((patch + 1)).dev${{ github.run_number }}"
+      - id: version
+        run: echo "version=$(uv version --short)" >> "$GITHUB_OUTPUT"
+      - run: uv build
+      - name: Check metadata renders on PyPI
+        run: uvx twine check --strict dist/*
+      - name: Smoke-test the wheel and the sdist
+        env:
+          EXPECTED: jira-time-tracker ${{ steps.version.outputs.version }}
+        run: |
+          for dist in dist/*.whl dist/*.tar.gz; do
+            uv venv -q "/tmp/smoke" --clear
+            uv pip install -q --python /tmp/smoke "$dist"
+            got=$(/tmp/smoke/bin/jtt --version)
+            if [[ "$got" != "$EXPECTED" ]]; then
+              echo "::error::$dist: jtt --version printed '$got', expected '$EXPECTED'"; exit 1
+            fi
+            /tmp/smoke/bin/jira-time-tracker --help > /dev/null
+            echo "ok $dist: $got"
+          done
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
