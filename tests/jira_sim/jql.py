@@ -48,6 +48,9 @@ def _clause(site: Site, text: str) -> Callable[[Issue], bool]:
     if m := re.fullmatch(r"project\s*=\s*\"?(\w+)\"?", text, re.IGNORECASE):
         key = m[1].upper()
         return lambda issue: issue.project.key == key
+    if m := re.fullmatch(r"parent\s+in\s*\(([^)]*)\)", text, re.IGNORECASE):
+        keys = {k.strip().strip('"').upper() for k in m[1].split(",")}
+        return lambda issue: issue.parent in keys
     if m := re.fullmatch(r"(updated|created)\s*(>=|<|>|<=)\s*(.+)", text, re.IGNORECASE):
         name, op, bound = m[1].lower(), m[2], _moment(site, m[3])
         compare = {

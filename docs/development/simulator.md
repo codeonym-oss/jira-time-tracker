@@ -18,8 +18,8 @@ A seeded generator builds the site, so the same seed always gives the same data:
 Thirteen people share the projects, and one of them has left: still in the histories, no
 longer assignable. Over the 120 days up to Monday 28 September 2026, each issue is created,
 sometimes with an estimate and an assignee, then goes through estimates, re-estimates,
-reassignments and status changes, a few made by an automation account. You log in as
-Robin Hale.
+reassignments and status changes, a few made by an automation account. Each subtask belongs to
+the closest earlier issue in its project that isn't a subtask. You log in as Robin Hale.
 
 The server answers the Jira Cloud REST v3 endpoints `jtt` uses, with Jira's response shapes.
 It evaluates the JQL `jtt` sends, and answers any other query with an error, as Jira does, so a

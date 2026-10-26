@@ -118,6 +118,7 @@ def issue_json(issue: Issue, fields: list[str] | None) -> dict:
         "issuetype": issue.issue_type,
         "assignee": _user(issue.assignee),
         "project": {"key": issue.project.key, "name": issue.project.name},
+        "parent": {"key": issue.parent} if issue.parent else None,
         issue.project.field_id: issue.estimate,
     }
     wanted = every if not fields or "*all" in fields else {f: every.get(f) for f in fields}

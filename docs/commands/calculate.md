@@ -56,6 +56,7 @@ jtt calculate [OPTIONS]
 | `-u`, `--user` `TEXT` |  | Account id, 'me', or part of a name or email. |
 | `--attribution` `[was\|holder]` | `was` | With --user: 'was' credits every in-period change on issues they held at some point; 'holder' only the changes made while they held the issue. |
 | `--as` `[points\|seconds\|minutes\|hours\|days\|weeks]` |  | Show time amounts in another time unit. |
+| `--exclude-parents` |  | Leave out issues that have subtasks or child issues, so work estimated on both a story and its subtasks is counted once. |
 | `--workers` `INTEGER` | `8` | Parallel changelog requests. From 1 to 32. |
 | `-v`, `--v` |  | More detail, repeatable. -v adds columns, -vv (--vv) adds per-issue timelines and unchanged issues, -vvv (--vvv) adds the JQL, the HTTP trace and out-of-period changes. |
 | `-h`, `--help` |  | Show the command's help and exit. |
