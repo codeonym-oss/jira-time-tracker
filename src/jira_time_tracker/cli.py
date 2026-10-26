@@ -112,6 +112,14 @@ VerboseOpt = Annotated[
         "-vvv (--vvv) adds the JQL, the HTTP trace and out-of-period changes.",
     ),
 ]
+ParentsOpt = Annotated[
+    bool,
+    typer.Option(
+        "--exclude-parents",
+        help="Leave out issues that have subtasks or child issues, so work estimated on "
+        "both a story and its subtasks is counted once.",
+    ),
+]
 VvOpt = Annotated[bool, typer.Option("--vv", hidden=True)]
 VvvOpt = Annotated[bool, typer.Option("--vvv", hidden=True)]
 
@@ -247,16 +255,34 @@ def build_jql(project: str, window: Window, user: str | None = None) -> str:
 REPORT_FIELDS = ["summary", "created", "updated", "status", "issuetype", "assignee"]
 
 
+def search_issues(
+    client: JiraClient, project: ProjectConfig, jql: str, exclude_parents: bool = False
+) -> list[dict]:
+    """Search the issues, leaving out those with children when `exclude_parents`.
+
+    A story and its subtasks can both carry an estimate; counting only the issues
+    without children counts that work once.
+    """
+    issues = client.search(jql, [*REPORT_FIELDS, project.field_id])
+    if not exclude_parents:
+        return issues
+    # A subtask can't have children, so only the other issues need asking about.
+    keys = [i["key"] for i in issues if not (i["fields"].get("issuetype") or {}).get("subtask")]
+    parents = client.parents(keys) if keys else set()
+    return [i for i in issues if i["key"] not in parents]
+
+
 def collect(
     client: JiraClient,
     project: ProjectConfig,
     window: Window,
     jql: str,
     with_completions: bool = True,
+    exclude_parents: bool = False,
 ) -> list[IssueReport]:
     """Search the issues, read their changelogs in parallel, and build reports."""
     with console.status("Searching issues…"):
-        issues = client.search(jql, [*REPORT_FIELDS, project.field_id])
+        issues = search_issues(client, project, jql, exclude_parents)
         categories = client.statuses() if with_completions and issues else None
     with Progress(
         SpinnerColumn(),
@@ -849,6 +875,7 @@ def fetch(
     period: PeriodOpt = None,
     user: UserOpt = None,
     as_unit: AsOpt = None,
+    exclude_parents: ParentsOpt = False,
     as_json: Annotated[
         bool, typer.Option("--json", help="Print raw JSON instead of a table.")
     ] = False,
@@ -861,7 +888,7 @@ def fetch(
     account = resolve_user(client, site, key, user) if user else None
     jql = build_jql(key, window, account[0] if account else None)
     with console.status("Searching issues…"):
-        issues = client.search(jql, [*REPORT_FIELDS, tracked.field_id])
+        issues = search_issues(client, tracked, jql, exclude_parents)
     if as_json:
         print(json.dumps({"jql": jql, "issues": issues}, indent=2, ensure_ascii=False))
         return
@@ -927,6 +954,7 @@ def calculate(
         ),
     ] = Attribution.was,
     as_unit: AsOpt = None,
+    exclude_parents: ParentsOpt = False,
     workers: WorkersOpt = 8,
     verbose: VerboseOpt = 0,
     vv: VvOpt = False,
@@ -961,7 +989,7 @@ def calculate(
     if level >= 3:
         console.print(Panel(escape(jql), title="JQL", title_align="left", border_style="dim"))
 
-    reports = collect(client, tracked, window, jql)
+    reports = collect(client, tracked, window, jql, exclude_parents=exclude_parents)
     if account and attribution is Attribution.holder:
         deltas = {r.key: r.delta_for(account[0]) for r in reports}
     else:
@@ -1042,6 +1070,7 @@ def contributions_command(
         GroupBy, typer.Option("--by", help="Add a breakdown of the net per day or week.")
     ] = GroupBy.none,
     as_unit: AsOpt = None,
+    exclude_parents: ParentsOpt = False,
     workers: WorkersOpt = 8,
     verbose: VerboseOpt = 0,
     vv: VvOpt = False,
@@ -1075,7 +1104,7 @@ def contributions_command(
     )
     if level >= 3:
         console.print(Panel(escape(jql), title="JQL", title_align="left", border_style="dim"))
-    reports = collect(client, tracked, window, jql)
+    reports = collect(client, tracked, window, jql, exclude_parents=exclude_parents)
     people = contributions(reports)
     if account:
         people = [p for p in people if p.account_id == account[0]]
@@ -1126,6 +1155,7 @@ def export_command(
         Attribution, typer.Option("--attribution", help="As in calculate.")
     ] = Attribution.was,
     as_unit: AsOpt = None,
+    exclude_parents: ParentsOpt = False,
     workers: WorkersOpt = 8,
     force: Annotated[bool, typer.Option("--force", help="Overwrite an existing file.")] = False,
 ) -> None:
@@ -1146,7 +1176,7 @@ def export_command(
     # issue views follow --user/--attribution.
     per_person = kind in (ExportKind.contributions, ExportKind.daily)
     jql = build_jql(key, window, None if per_person or not account else account[0])
-    reports = collect(client, tracked, window, jql)
+    reports = collect(client, tracked, window, jql, exclude_parents=exclude_parents)
 
     if kind is ExportKind.issues:
         deltas = {

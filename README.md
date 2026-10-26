@@ -84,6 +84,14 @@ Each command's options and examples are on its [docs page](https://docs.codeonym
 Every report takes `-p KEY` (default: the project set by `init`), a period, and
 `--as hours|days|…` to show time amounts in another unit.
 
+### Parents and subtasks (`--exclude-parents`)
+
+Every issue touched in the period counts, parents included. If your team estimates a story
+and its subtasks too, the same work counts twice. `--exclude-parents` (on `fetch`,
+`calculate`, `contributions` and `export`) leaves out every issue with children: stories,
+tasks or bugs with subtasks, and epics with child issues. Use it only when the estimates
+sit on the subtasks, since an estimate kept only on a parent then drops out of the total.
+
 ### Periods
 
 Periods are **half-open: the start day is included and the end day is

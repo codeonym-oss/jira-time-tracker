@@ -37,6 +37,7 @@ jtt fetch [OPTIONS]
 | `--period` `TEXT` |  | Named period instead of --from/--to: today, yesterday, this-week, last-week, this-month, last-month, this-quarter, last-quarter, this-year, last-7-days, last-30-days. |
 | `-u`, `--user` `TEXT` |  | Account id, 'me', or part of a name or email. |
 | `--as` `[points\|seconds\|minutes\|hours\|days\|weeks]` |  | Show time amounts in another time unit. |
+| `--exclude-parents` |  | Leave out issues that have subtasks or child issues, so work estimated on both a story and its subtasks is counted once. |
 | `--json` |  | Print raw JSON instead of a table. |
 | `-h`, `--help` |  | Show the command's help and exit. |
 <!-- /options -->

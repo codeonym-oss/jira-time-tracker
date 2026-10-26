@@ -209,6 +209,19 @@ class JiraClient:
             if not token or data.get("isLast", False):
                 return issues
 
+    def parents(self, keys: list[str]) -> set[str]:
+        """Return which of `keys` are the parent of at least one issue.
+
+        `parent` covers both subtasks and the children of epics.
+        """
+        found: set[str] = set()
+        for start in range(0, len(keys), PAGE_SIZE):
+            chunk = ", ".join(keys[start : start + PAGE_SIZE])
+            for child in self.search(f"parent in ({chunk})", ["parent"]):
+                if parent := (child["fields"].get("parent") or {}).get("key"):
+                    found.add(parent)
+        return found
+
     def approximate_count(self, jql: str) -> int | None:
         """Return Jira's approximate count of issues matching `jql`."""
         try:

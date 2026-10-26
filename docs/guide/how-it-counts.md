@@ -26,6 +26,22 @@ give exact bounds: `assignee WAS X DURING ("2026-09-24", "2026-09-25")` matched 
 assigned in the afternoon of the 25th, and `DURING ("2026-09-25", "2026-09-25")` matched
 nothing.
 
+## Which issues count
+
+Every issue touched in the period counts, parents included. When a team estimates a story and
+also its subtasks, that counts the same work twice. `--exclude-parents` (on `fetch`,
+`calculate`, `contributions` and `export`) leaves out every issue that has children: stories,
+tasks or bugs with subtasks, and epics with child issues. Subtasks, and issues never split,
+still count.
+
+```console
+$ jtt calculate --from 2026-09-21 --to 2026-09-28 --exclude-parents
+```
+
+Use it only when the estimates sit on the subtasks: an estimate kept only on a parent drops
+out of the total. Whether an issue has children is read when the report runs, so a story split
+into subtasks after the period is left out of that period too.
+
 ## Periods
 
 Periods are **half-open: the start day is included and the end day is excluded.**

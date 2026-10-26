@@ -227,6 +227,7 @@ class Issue:
     created_with: float | None  # entered on the create screen: no changelog entry
     assignee_at_create: dict | None  # likewise
     events: list[Event] = field(default_factory=list)
+    parent: str | None = None  # a subtask's story, task or bug
 
     @property
     def updated(self) -> datetime:
@@ -294,6 +295,11 @@ class Site:
     def user(self, name: str) -> dict[str, Any]:
         """Return a person by display name."""
         return next(u for u in self.users if u["displayName"] == name)
+
+    @property
+    def parents(self) -> set[str]:
+        """Return the keys of the issues that have subtasks."""
+        return {i.parent for i in self.issues if i.parent}
 
 
 def _ascii(text: str) -> str:
@@ -425,6 +431,14 @@ def generate(seed: int = SEED, now: datetime = NOW) -> Site:
             )
             _history(rng, issue, team, automation, now)
             issues.append(issue)
+    # Each subtask belongs to the issue before it that isn't one. Decided without `rng`, so
+    # the rest of the site is the same as without parents.
+    latest: dict[str, str] = {}
+    for issue in issues:
+        if issue.issue_type["subtask"]:
+            issue.parent = latest.get(issue.project.key)
+        else:
+            latest[issue.project.key] = issue.key
     return Site(users, me, automation, list(PROJECT_SPECS), members, issues, now)
 
 
@@ -451,13 +465,17 @@ class Truth:
         return sum(self.per_issue.values())
 
 
-def truth(site: Site, project: str, first: date, end: date) -> Truth:
+def truth(
+    site: Site, project: str, first: date, end: date, *, exclude_parents: bool = False
+) -> Truth:
     """Return what the period [first, end) holds for `project`, as the generator made it.
 
-    The same rules jtt documents: an estimate entered on the create screen counts when the
-    issue was created in the period, credited to the first person ever assigned; every
-    in-period change counts, credited to whoever held the issue then.
+    The same rules jtt documents: issues with subtasks are left out when
+    `exclude_parents`; an estimate entered on the create screen counts when the issue was
+    created in the period, credited to the first person ever assigned; every in-period
+    change counts, credited to whoever held the issue then.
     """
+    parents = site.parents if exclude_parents else set()
     tz = site.now.tzinfo
     lo, hi = _day_start(first, tz), _day_start(end, tz)
     result = Truth()
@@ -469,7 +487,7 @@ def truth(site: Site, project: str, first: date, end: date) -> Truth:
         result.per_person[name] = result.per_person.get(name, 0.0) + amount
 
     for issue in site.issues:
-        if issue.project.key != project:
+        if issue.project.key != project or issue.key in parents:
             continue
         if issue.updated >= lo and issue.created < hi:
             result.touched.add(issue.key)

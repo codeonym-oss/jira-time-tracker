@@ -233,6 +233,31 @@ def test_reports_match_what_the_generator_made(configured, tmp_path, truths, key
     assert daily == pytest.approx(want)
 
 
+def test_exclude_parents_counts_only_issues_without_children(configured, tmp_path):
+    first, end = PERIODS[1]
+    span = (date.fromisoformat(first), date.fromisoformat(end))
+    every, leaves = (
+        jira_sim.truth(SITE, "DEMO", *span),
+        jira_sim.truth(SITE, "DEMO", *span, exclude_parents=True),
+    )
+    parents = every.touched - leaves.touched
+    assert parents
+    assert parents <= SITE.parents
+
+    rows = export(tmp_path, "issues", *period(first, end))
+    assert {r["key"] for r in rows} == every.touched
+    rows = export(tmp_path, "issues", *period(first, end), "--exclude-parents")
+    assert {r["key"] for r in rows} == leaves.touched
+    got = {r["key"]: r["delta"] for r in rows if r["delta"]}
+    assert got == pytest.approx({k: v for k, v in leaves.per_issue.items() if v})
+    people = export(tmp_path, "contributions", *period(first, end), "--exclude-parents")
+    got = {r["person"]: r["net"] for r in people if r["net"]}
+    assert got == pytest.approx({k: v for k, v in leaves.per_person.items() if v})
+
+    data = json.loads(ok("fetch", *period(first, end), "--json", "--exclude-parents"))
+    assert {i["key"] for i in data["issues"]} == leaves.touched
+
+
 def test_fetch_lists_the_touched_issues(configured):
     first, end = WEEK
     data = json.loads(ok("fetch", *period(first, end), "--json"))

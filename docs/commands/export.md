@@ -58,6 +58,7 @@ jtt export [OPTIONS]
 | `-u`, `--user` `TEXT` |  | Account id, 'me', or part of a name or email. |
 | `--attribution` `[was\|holder]` | `was` | As in calculate. |
 | `--as` `[points\|seconds\|minutes\|hours\|days\|weeks]` |  | Show time amounts in another time unit. |
+| `--exclude-parents` |  | Leave out issues that have subtasks or child issues, so work estimated on both a story and its subtasks is counted once. |
 | `--workers` `INTEGER` | `8` | Parallel changelog requests. From 1 to 32. |
 | `--force` |  | Overwrite an existing file. |
 | `-h`, `--help` |  | Show the command's help and exit. |
