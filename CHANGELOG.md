@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.2.0](https://github.com/codeonym-oss/jira-time-tracker/compare/v0.1.4...v0.2.0) (2026-10-26)
+
+
+### Features
+
+* --exclude-parents counts each piece of work once ([#20](https://github.com/codeonym-oss/jira-time-tracker/issues/20)) ([#21](https://github.com/codeonym-oss/jira-time-tracker/issues/21)) ([0748209](https://github.com/codeonym-oss/jira-time-tracker/commit/0748209b63bde702209bf5eab20335afdac3fc8a))
+
+
+### Build
+
+* **deps-dev:** bump ruff from 0.16.9 to 0.16.10 in the dev-tools group ([#15](https://github.com/codeonym-oss/jira-time-tracker/issues/15)) ([8a1af37](https://github.com/codeonym-oss/jira-time-tracker/commit/8a1af375336ea4eadc4292f79d76f858ad2f069c))
+* **deps:** bump platformdirs from 4.11.15 to 4.12.4 ([#17](https://github.com/codeonym-oss/jira-time-tracker/issues/17)) ([3b8be93](https://github.com/codeonym-oss/jira-time-tracker/commit/3b8be934e9f6ce218132d544a45b0a33717369ac))
+* **deps:** bump typer from 0.27.2 to 0.27.3 ([#19](https://github.com/codeonym-oss/jira-time-tracker/issues/19)) ([03571c8](https://github.com/codeonym-oss/jira-time-tracker/commit/03571c8f439d0bf2af7c85ee7e7cadbdb38ccb95))
+
 ## [0.1.4](https://github.com/codeonym-oss/jira-time-tracker/compare/v0.1.3...v0.1.4) (2026-09-28)
 
 
