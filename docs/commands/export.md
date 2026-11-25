@@ -12,7 +12,9 @@ $ jtt export -k daily -o week.md --from 2026-09-21 --to 2026-09-28
 
 The file's extension picks the format, or `--format` does. CSV is written with a byte order
 mark, so Excel opens accented names correctly; JSON and Markdown also carry the report's
-settings: the project, field, unit, period, person and query.
+settings: the project, field, unit, period, person and query, and the attribution when
+`last-holder` decided the rows. CSV carries no settings, so put the attribution in the file's
+name.
 
 `--kind` chooses what each row is:
 
@@ -39,8 +41,8 @@ settings: the project, field, unit, period, person and query.
   `holder`, they credit each change to whoever held the issue when it happened.
 
 ```console
-$ jtt export -k contributions -o totals.csv --from 2026-09-01 --to 2026-10-01 --attribution last-holder
-$ jtt export -k issues -o daniel.csv --from 2026-09-01 --to 2026-10-01 --user daniel --attribution last-holder
+$ jtt export -k contributions -o september-last-holder.csv --from 2026-09-01 --to 2026-10-01 --attribution last-holder
+$ jtt export -k issues -o daniel-last-holder.csv --from 2026-09-01 --to 2026-10-01 --user daniel --attribution last-holder
 ```
 
 An existing file is kept

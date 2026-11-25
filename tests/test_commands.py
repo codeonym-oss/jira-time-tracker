@@ -539,6 +539,24 @@ def test_export_per_person_kinds_ignore_the_other_modes(configured, tmp_path, mo
     assert got == pytest.approx({k: v for k, v in truth.per_person.items() if v})
 
 
+@pytest.mark.parametrize("kind", ["issues", "changes", "contributions", "daily"])
+def test_export_says_when_last_holder_decided_the_rows(configured, tmp_path, kind):
+    def meta(*args: str) -> dict:
+        export(tmp_path, kind, *period(*WEEK), *args)
+        return json.loads((tmp_path / f"{kind}.json").read_text(encoding="utf-8"))["meta"]
+
+    me = ["--user", "me"]
+    assert meta(*me, *LAST)["attribution"] == "last-holder"
+    for other in ([], me, [*me, "--attribution", "was"], [*me, "--attribution", "holder"]):
+        assert "attribution" not in meta(*other)
+    # Without --user, the mode has no effect on issues and changes.
+    assert ("attribution" in meta(*LAST)) is (kind in ("contributions", "daily"))
+
+    target = tmp_path / "report.md"
+    ok("export", "-o", str(target), "-k", kind, *period(*WEEK), *me, *LAST)
+    assert "- **Attribution:** last-holder\n" in target.read_text(encoding="utf-8")
+
+
 def test_contributions_by_last_holder_for_one_person(configured):
     truth = month_truth()
     name = "Daniel Okafor"

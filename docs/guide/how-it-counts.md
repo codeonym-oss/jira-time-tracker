@@ -116,7 +116,8 @@ Reassigning an issue after the period ended never moves its credit from one pers
 There is one case where a past period can change: an issue nobody had been assigned to by the
 end of the period counts as "Unassigned" until someone is first assigned to it, and then as
 theirs. The project's net stays the same. Before closing a period, assign the issues it left
-under "Unassigned", and keep the exported file.
+under "Unassigned", and keep the exported file. JSON and Markdown exports say when they used
+`last-holder`; for CSV, put it in the file's name.
 
 The people's nets add up to the project's net only together with "Unassigned", which
 `--user` can't select: [`jtt contributions`](../commands/contributions.md) shows everyone at

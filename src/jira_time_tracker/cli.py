@@ -1227,7 +1227,8 @@ def export_command(
     # Per-person views credit by holder (or last holder) over the whole project;
     # issue views follow --user/--attribution.
     by_last_holder = attribution is Attribution.last_holder
-    whole_project = kind in (ExportKind.contributions, ExportKind.daily) or by_last_holder
+    per_person = kind in (ExportKind.contributions, ExportKind.daily)
+    whole_project = per_person or by_last_holder
     jql = build_jql(key, window, None if whole_project or not account else account[0])
     reports = collect(client, tracked, window, jql, exclude_parents=exclude_parents)
     if account and by_last_holder:
@@ -1263,6 +1264,8 @@ def export_command(
         "period_from_included": window.date_from.isoformat(),
         "period_to_excluded": window.date_to.isoformat(),
         "user": account[1] if account else "",
+        # Only where it decided the rows; without --user, it doesn't on issues and changes.
+        **({"attribution": "last-holder"} if by_last_holder and (account or per_person) else {}),
         "jql": jql,
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
