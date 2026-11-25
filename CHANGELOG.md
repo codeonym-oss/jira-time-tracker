@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.0](https://github.com/codeonym-oss/jira-time-tracker/compare/v0.2.0...v0.3.0) (2026-11-25)
+
+
+### Features
+
+* credit each issue to one person with --attribution last-holder ([#27](https://github.com/codeonym-oss/jira-time-tracker/issues/27)) ([0ff4d11](https://github.com/codeonym-oss/jira-time-tracker/commit/0ff4d1178975f9fabf28364b22c48f294d6c3882))
+* say in exports when last-holder decided the rows ([#29](https://github.com/codeonym-oss/jira-time-tracker/issues/29)) ([#30](https://github.com/codeonym-oss/jira-time-tracker/issues/30)) ([3f47da4](https://github.com/codeonym-oss/jira-time-tracker/commit/3f47da461fcfc33c3ef06495acda43c1d2c4ecbb))
+
 ## [0.2.0](https://github.com/codeonym-oss/jira-time-tracker/compare/v0.1.4...v0.2.0) (2026-10-26)
 
 
