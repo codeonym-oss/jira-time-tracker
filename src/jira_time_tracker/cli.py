@@ -47,6 +47,14 @@ class Attribution(str, Enum):
 
     was = "was"
     holder = "holder"
+    last_holder = "last-holder"
+
+
+class Credit(str, Enum):
+    """Who contributions credits: only the modes whose totals add up."""
+
+    holder = "holder"
+    last_holder = "last-holder"
 
 
 class GroupBy(str, Enum):
@@ -302,6 +310,11 @@ def collect(
         )
         for issue in issues
     ]
+
+
+def last_held_by(reports: list[IssueReport], account_id: str) -> list[IssueReport]:
+    """Return the reports last-holder attribution credits to `account_id`."""
+    return [r for r in reports if r.last_holder.account_id == account_id]
 
 
 # ── account ──────────────────────────────────────────────────────────────────
@@ -950,7 +963,9 @@ def calculate(
         typer.Option(
             "--attribution",
             help="With --user: 'was' credits every in-period change on issues they held "
-            "at some point; 'holder' only the changes made while they held the issue.",
+            "at some point; 'holder' only the changes made while they held the issue; "
+            "'last-holder' every in-period change on issues they were the last person assigned "
+            "to before the period ended, so totals add up across people.",
         ),
     ] = Attribution.was,
     as_unit: AsOpt = None,
@@ -969,7 +984,10 @@ def calculate(
     client = open_client(site, level, workers)
     account = resolve_user(client, site, key, user) if user else None
     amounts = Amounts.for_project(tracked, site.calendar, as_unit)
-    jql = build_jql(key, window, account[0] if account else None)
+    # The last person assigned may have held the issue only outside the period, which
+    # `assignee WAS … DURING` misses: search the whole project, then keep their issues.
+    by_last_holder = account is not None and attribution is Attribution.last_holder
+    jql = build_jql(key, window, account[0] if account and not by_last_holder else None)
 
     rows = [
         ("Project", key),
@@ -977,12 +995,20 @@ def calculate(
         ("Period", render.period_line(window)),
     ]
     if account:
-        how = (
-            "held the issue at some point in the period"
-            if attribution is Attribution.was
-            else "only changes made while holding the issue"
-        )
+        how = {
+            Attribution.was: "held the issue at some point in the period",
+            Attribution.holder: "only changes made while holding the issue",
+            Attribution.last_holder: "last person assigned before the period ended",
+        }[attribution]
         rows.insert(1, ("Assignee", f"{escape(account[1])} [dim]({how})[/]"))
+        if attribution is Attribution.was:
+            rows.append(
+                (
+                    "Note",
+                    "[dim]an issue that changed hands counts for each person who held it; use "
+                    "--attribution last-holder for totals that add up across people[/]",
+                )
+            )
     if level:
         rows.append(("Verbosity", f"-{'v' * level}"))
     console.print(render.header("Tracked amount delta", rows))
@@ -990,6 +1016,8 @@ def calculate(
         console.print(Panel(escape(jql), title="JQL", title_align="left", border_style="dim"))
 
     reports = collect(client, tracked, window, jql, exclude_parents=exclude_parents)
+    if account and by_last_holder:
+        reports = last_held_by(reports, account[0])
     if account and attribution is Attribution.holder:
         deltas = {r.key: r.delta_for(account[0]) for r in reports}
     else:
@@ -1004,7 +1032,7 @@ def calculate(
             f"\n  [dim]Nothing changed in the period across {len(reports)} scanned issues.[/]\n"
         )
     if level >= 2 and any(r.changes or r.created_with is not None for r in reports):
-        console.print(render.timelines(reports, amounts, level))
+        console.print(render.timelines(reports, amounts, level, by_last_holder))
         console.print()
     console.print(render.totals(reports, deltas, amounts, level, time.monotonic() - started))
 
@@ -1069,6 +1097,15 @@ def contributions_command(
     group_by: Annotated[
         GroupBy, typer.Option("--by", help="Add a breakdown of the net per day or week.")
     ] = GroupBy.none,
+    attribution: Annotated[
+        Credit,
+        typer.Option(
+            "--attribution",
+            help="'holder' credits each change to whoever held the issue when it happened; "
+            "'last-holder' credits everything on an issue to the last person assigned before "
+            "the period ended.",
+        ),
+    ] = Credit.holder,
     as_unit: AsOpt = None,
     exclude_parents: ParentsOpt = False,
     workers: WorkersOpt = 8,
@@ -1078,9 +1115,10 @@ def contributions_command(
 ) -> None:
     """Per-person contributions and statistics for a period.
 
-    Each in-period change is credited to whoever held the issue when it
-    happened, and an issue's created-with amount to the first person assigned,
-    so the per-person nets add up to the project net.
+    By default each in-period change is credited to whoever held the issue when
+    it happened, and an issue's created-with amount to the first person
+    assigned. With --attribution last-holder, everything on an issue goes to one
+    person. Either way the per-person nets add up to the project net.
     """
     level = verbosity(verbose, vv, vvv)
     started = time.monotonic()
@@ -1091,6 +1129,12 @@ def contributions_command(
     account = resolve_user(client, site, key, user) if user else None
     amounts = Amounts.for_project(tracked, site.calendar, as_unit)
     jql = build_jql(key, window)
+    by_last_holder = attribution is Credit.last_holder
+    credit = (
+        "everything on an issue goes to the last person assigned before the period ended"
+        if by_last_holder
+        else "each change goes to whoever held the issue when it happened"
+    )
 
     console.print(
         render.header(
@@ -1098,17 +1142,19 @@ def contributions_command(
             [
                 ("Field", render.field_line(tracked, amounts)),
                 ("Period", render.period_line(window)),
-                ("Credit", "[dim]each change goes to whoever held the issue when it happened[/]"),
+                ("Credit", f"[dim]{credit}[/]"),
             ],
         )
     )
     if level >= 3:
         console.print(Panel(escape(jql), title="JQL", title_align="left", border_style="dim"))
     reports = collect(client, tracked, window, jql, exclude_parents=exclude_parents)
-    people = contributions(reports)
+    if account and by_last_holder:
+        reports = last_held_by(reports, account[0])
+    people = contributions(reports, by_last_holder)
     if account:
         people = [p for p in people if p.account_id == account[0]]
-    daily = daily_net(reports, window, account[0] if account else None)
+    daily = daily_net(reports, window, account[0] if account else None, by_last_holder)
 
     if people:
         console.print(render.contributions_table(people, amounts))
@@ -1121,12 +1167,13 @@ def contributions_command(
             render.series_table("Per week (from Monday)", by_week(daily), amounts, "wk of %d %b")
         )
     if level >= 1 and reports:
-        shown = [r for r in reports if (r.delta_for(account[0]) if account else r.delta)]
-        deltas = {r.key: (r.delta_for(account[0]) if account else r.delta) for r in reports}
-        if shown or level >= 2:
+        # Under last-holder the reports are already only theirs, credited in full.
+        in_part = account if not by_last_holder else None
+        deltas = {r.key: (r.delta_for(in_part[0]) if in_part else r.delta) for r in reports}
+        if any(deltas.values()) or level >= 2:
             console.print(render.issues_table(reports, amounts, level, deltas))
     if level >= 2:
-        console.print(render.timelines(reports, amounts, level))
+        console.print(render.timelines(reports, amounts, level, by_last_holder))
     console.print(render.stats_panel(reports, people, daily, amounts))
     if level >= 1:
         console.print(
@@ -1152,7 +1199,12 @@ def export_command(
     period: PeriodOpt = None,
     user: UserOpt = None,
     attribution: Annotated[
-        Attribution, typer.Option("--attribution", help="As in calculate.")
+        Attribution,
+        typer.Option(
+            "--attribution",
+            help="As in calculate. Contributions and daily rows credit by holder, or by last "
+            "holder with 'last-holder', even without --user.",
+        ),
     ] = Attribution.was,
     as_unit: AsOpt = None,
     exclude_parents: ParentsOpt = False,
@@ -1172,11 +1224,14 @@ def export_command(
     client = open_client(site, 0, workers)
     account = resolve_user(client, site, key, user) if user else None
     amounts = Amounts.for_project(tracked, site.calendar, as_unit)
-    # Per-person views credit by holder over the whole project;
+    # Per-person views credit by holder (or last holder) over the whole project;
     # issue views follow --user/--attribution.
-    per_person = kind in (ExportKind.contributions, ExportKind.daily)
-    jql = build_jql(key, window, None if per_person or not account else account[0])
+    by_last_holder = attribution is Attribution.last_holder
+    whole_project = kind in (ExportKind.contributions, ExportKind.daily) or by_last_holder
+    jql = build_jql(key, window, None if whole_project or not account else account[0])
     reports = collect(client, tracked, window, jql, exclude_parents=exclude_parents)
+    if account and by_last_holder:
+        reports = last_held_by(reports, account[0])
 
     if kind is ExportKind.issues:
         deltas = {
@@ -1191,13 +1246,13 @@ def export_command(
         if account and attribution is Attribution.holder:
             rows = [row for row in rows if row["holder_id"] == account[0]]
     elif kind is ExportKind.contributions:
-        people = contributions(reports)
+        people = contributions(reports, by_last_holder)
         rows = exporter.contribution_rows(
             [p for p in people if not account or p.account_id == account[0]], amounts
         )
     else:
         rows = exporter.daily_rows(
-            daily_net(reports, window, account[0] if account else None), amounts
+            daily_net(reports, window, account[0] if account else None, by_last_holder), amounts
         )
 
     meta = {

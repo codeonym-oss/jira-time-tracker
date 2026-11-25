@@ -458,11 +458,30 @@ class Truth:
     per_day: dict[date, float] = field(default_factory=dict)
     touched: set[str] = field(default_factory=set)  # issues jtt's search should find
     changes: int = 0  # in-period edits, plus created-with values, as `export -k changes` rows
+    # The same amounts under the last-holder rule: each touched issue's one person, by display
+    # name, and what that credits them with, in all and per day.
+    last_holder: dict[str, str] = field(default_factory=dict)
+    per_last_holder: dict[str, float] = field(default_factory=dict)
+    per_last_holder_day: dict[tuple[str, date], float] = field(default_factory=dict)
+    changes_of: dict[str, int] = field(default_factory=dict)  # `changes`, per issue
 
     @property
     def net(self) -> float:
         """Return the project's net over the period."""
         return sum(self.per_issue.values())
+
+
+def last_person_before(issue: Issue, end: datetime) -> str:
+    """Return the name of the last person `issue` was assigned to before `end`.
+
+    Nobody by then: the first person it was ever assigned to. Nobody ever: "Unassigned".
+    """
+    name = "Unassigned"
+    for since, person in issue.holders():
+        # Once someone is known, only an assignment before the end can replace them.
+        if person is not None and (since < end or name == "Unassigned"):
+            name = person["displayName"]
+    return name
 
 
 def truth(
@@ -473,7 +492,8 @@ def truth(
     The same rules jtt documents: issues with subtasks are left out when
     `exclude_parents`; an estimate entered on the create screen counts when the issue was
     created in the period, credited to the first person ever assigned; every in-period
-    change counts, credited to whoever held the issue then.
+    change counts, credited to whoever held the issue then. The `last_holder` answers credit
+    an issue's whole amount to one person instead (`last_person_before`).
     """
     parents = site.parents if exclude_parents else set()
     tz = site.now.tzinfo
@@ -485,20 +505,25 @@ def truth(
         result.per_issue[issue_key] = result.per_issue.get(issue_key, 0.0) + amount
         name = person["displayName"] if person else "Unassigned"
         result.per_person[name] = result.per_person.get(name, 0.0) + amount
+        last = result.last_holder[issue_key]
+        result.per_last_holder[last] = result.per_last_holder.get(last, 0.0) + amount
+        by_day = result.per_last_holder_day
+        by_day[last, day] = by_day.get((last, day), 0.0) + amount
+        result.changes_of[issue_key] = result.changes_of.get(issue_key, 0) + 1
+        result.changes += 1
 
     for issue in site.issues:
         if issue.project.key != project or issue.key in parents:
             continue
         if issue.updated >= lo and issue.created < hi:
             result.touched.add(issue.key)
+            result.last_holder[issue.key] = last_person_before(issue, hi)
         if lo <= issue.created < hi and issue.created_with:
             first_holder = next((h for _, h in issue.holders() if h), None)
             credit(issue.key, first_holder, issue.created_with, issue.created.date())
-            result.changes += 1
         for event in issue.events:
             if event.estimate and lo <= event.at < hi:
                 before, after = event.estimate
                 delta = (after or 0.0) - (before or 0.0)
                 credit(issue.key, issue.holder_at(event.at), delta, event.at.date())
-                result.changes += 1
     return result

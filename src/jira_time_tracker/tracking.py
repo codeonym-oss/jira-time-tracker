@@ -113,6 +113,8 @@ class IssueReport:
     created_with: float | None
     # Who is credited with created_with: the first person ever assigned.
     first_holder: Holder
+    # Who last-holder attribution credits with the whole delta.
+    last_holder: Holder
     changes: tuple[Change, ...]
     holders: tuple[Holder, ...]
     # When the issue last moved into a done status inside the period, and who held it.
@@ -181,6 +183,20 @@ def holder_at(timeline: list[Holder], moment: datetime) -> Holder:
     return held
 
 
+def last_holder_by_end(holders: list[Holder], window: Window) -> Holder:
+    """Return the last person assigned before the period ended, skipping unassigned stretches.
+
+    When nobody had been assigned by then, the first person ever assigned; when nobody ever
+    was, Unassigned. Never the current assignee as such: reassigning an issue after the
+    period must not move its credit to someone else.
+    """
+    people = [h for h in holders if h.account_id]
+    if not people:
+        return Holder(None, *UNASSIGNED)
+    by_end = [h for h in people if h.since is None or window.position(h.since) != "after"]
+    return by_end[-1] if by_end else people[0]
+
+
 def build_report(
     issue: dict,
     changelog: list[dict],
@@ -231,6 +247,7 @@ def build_report(
         current_value=current_value,
         created_with=created_value if created_inside else None,
         first_holder=first_holder,
+        last_holder=last_holder_by_end(holders, window),
         changes=tuple(changes),
         holders=tuple(holders),
     )
@@ -286,10 +303,11 @@ class Contribution:
         return self.added + self.removed
 
 
-def contributions(reports: list[IssueReport]) -> list[Contribution]:
+def contributions(reports: list[IssueReport], by_last_holder: bool = False) -> list[Contribution]:
     """Credit each change to whoever held the issue when it happened.
 
-    A created-with amount goes to the first person ever assigned, so the per-person nets
+    A created-with amount goes to the first person ever assigned. With `by_last_holder`,
+    everything on an issue goes to its `last_holder` instead. Either way the per-person nets
     add up to the project's net.
     """
     people: dict[str, Contribution] = {}
@@ -301,18 +319,18 @@ def contributions(reports: list[IssueReport]) -> list[Contribution]:
 
     for report in reports:
         if report.created_with is not None:
-            credited = person(report.first_holder)
+            credited = person(report.last_holder if by_last_holder else report.first_holder)
             credited.created_count += 1
             credited.created_value += report.created_with
             _credit(credited, report.created_with)
             if report.created_with:
                 credited.issues.add(report.key)
         for change in report.in_period:
-            credited = person(change.holder)
+            credited = person(report.last_holder if by_last_holder else change.holder)
             _credit(credited, change.delta)
             credited.issues.add(report.key)
         if report.completed_by is not None:
-            credited = person(report.completed_by)
+            credited = person(report.last_holder if by_last_holder else report.completed_by)
             credited.completed_count += 1
             credited.completed_value += report.completed_value
     return sorted(people.values(), key=lambda c: (-c.net, c.name.lower()))
@@ -326,19 +344,27 @@ def _credit(contribution: Contribution, amount: float) -> None:
 
 
 def daily_net(
-    reports: list[IssueReport], window: Window, account_id: str | None = None
+    reports: list[IssueReport],
+    window: Window,
+    account_id: str | None = None,
+    by_last_holder: bool = False,
 ) -> dict[date, float]:
-    """Return the net amount per day, for everyone or one account."""
+    """Return the net amount per day, for everyone or one account, as `contributions` credits."""
     days = dict.fromkeys(window.each_day(), 0.0)
     for report in reports:
         if (
             report.created_with
             and report.created
-            and (account_id is None or report.first_holder.account_id == account_id)
+            and (
+                account_id is None
+                or (report.last_holder if by_last_holder else report.first_holder).account_id
+                == account_id
+            )
         ):
             days[report.created.date()] += report.created_with
         for change in report.in_period:
-            if account_id is None or change.holder.account_id == account_id:
+            holder = report.last_holder if by_last_holder else change.holder
+            if account_id is None or holder.account_id == account_id:
                 days[change.at.date()] += change.delta
     return days
 
