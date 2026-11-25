@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/codeonym-oss/jira-time-tracker/compare/v0.3.0...v0.3.1) (2026-11-25)
+
+
+### Build
+
+* **deps:** bump typer from 0.27.3 to 0.29.1 ([#25](https://github.com/codeonym-oss/jira-time-tracker/issues/25)) ([c30a5aa](https://github.com/codeonym-oss/jira-time-tracker/commit/c30a5aa30a36b20ef9c523a8cec2a6c0612c8de6))
+
 ## [0.3.0](https://github.com/codeonym-oss/jira-time-tracker/compare/v0.2.0...v0.3.0) (2026-11-25)
 
 
