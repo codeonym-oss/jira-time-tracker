@@ -115,9 +115,21 @@ shows +01.
 - `calculate --user X` (the default, `--attribution was`) counts every change
   made in the period on issues X held at some point in the period.
 - `--attribution holder` only counts changes made while X held the issue.
-- `contributions` always credits each change to whoever held the issue when it
-  happened. The value an issue was created with goes to the first person
-  assigned to it. That way the per-person totals add up to the project total.
+- `--attribution last-holder` counts every change made in the period on issues
+  X was the last person assigned to before the period ended. An issue counts
+  for exactly one person, and reassigning it later doesn't move it to someone
+  else, so use this mode for per-person totals that must add up. (If nobody had
+  been assigned by then, it goes to the first person ever assigned, even later.)
+
+With `was`, an issue that changed hands counts in full for each person who held
+it. With `holder`, a change made while nobody is assigned goes to "Unassigned".
+
+`contributions` credits by `holder` by default: each change to whoever held the
+issue when it happened, and the value an issue was created with to the first
+person assigned to it. It also takes `--attribution last-holder`. Either way the
+per-person totals, "Unassigned" included, add up to the project total.
+[How jtt counts](https://docs.codeonym.work/projects/jira-time-tracker/en/stable/guide/how-it-counts/#whose-work-counts)
+compares the three modes.
 
 ### Levels of detail
 

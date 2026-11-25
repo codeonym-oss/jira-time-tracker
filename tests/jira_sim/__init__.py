@@ -3,7 +3,18 @@
 `python -m tests.jira_sim` serves it; see `docs/tapes/README.md`.
 """
 
-from tests.jira_sim.data import EMAIL, NOW, SEED, TOKEN, Site, generate, truth
+from tests.jira_sim.data import EMAIL, NOW, SEED, TOKEN, Site, Truth, generate, truth
 from tests.jira_sim.server import SimServer, start
 
-__all__ = ["EMAIL", "NOW", "SEED", "TOKEN", "SimServer", "Site", "generate", "start", "truth"]
+__all__ = [
+    "EMAIL",
+    "NOW",
+    "SEED",
+    "TOKEN",
+    "SimServer",
+    "Site",
+    "Truth",
+    "generate",
+    "start",
+    "truth",
+]

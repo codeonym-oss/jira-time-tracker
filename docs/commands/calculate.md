@@ -8,16 +8,24 @@ person.
 ```console
 $ jtt calculate --from 2026-09-21 --to 2026-09-28
 $ jtt calculate --from 2026-09-21 --to 2026-09-28 --user daniel --attribution holder
+$ jtt calculate --from 2026-09-21 --to 2026-09-28 --user daniel --attribution last-holder
 ```
 
 Each row is an issue whose tracked field changed in the period, or that was created in it with
 a value, and its net change. [How jtt counts](../guide/how-it-counts.md) explains where each
 number comes from.
 
-`--user` narrows it to one person. With the default `--attribution was`, their issues are the
-ones they held at some point in the period, and every change on those counts. With
-`--attribution holder`, only the changes made while they held the issue count
-([whose work counts](../guide/how-it-counts.md#whose-work-counts)).
+`--user` narrows it to one person, and `--attribution` chooses what counts for them
+([whose work counts](../guide/how-it-counts.md#whose-work-counts)):
+
+- `was`, the default: every change on the issues they held at some point in the period. An issue
+  that changed hands counts for each person who held it, as a note in the header reminds you.
+- `holder`: only the changes made while they held the issue.
+- `last-holder`: every change on the issues they were the last person assigned to before the
+  period ended. Each issue counts for one person, so use it for totals that add up across
+  people. Only their issues are listed and counted as scanned.
+
+Without `--user`, `--attribution` has no effect.
 
 ## More detail
 
@@ -54,7 +62,7 @@ jtt calculate [OPTIONS]
 | `--to` `TEXT` |  | Last bound, excluded (YYYY-MM-DD). Defaults to tomorrow, so today counts. |
 | `--period` `TEXT` |  | Named period instead of --from/--to: today, yesterday, this-week, last-week, this-month, last-month, this-quarter, last-quarter, this-year, last-7-days, last-30-days. |
 | `-u`, `--user` `TEXT` |  | Account id, 'me', or part of a name or email. |
-| `--attribution` `[was\|holder]` | `was` | With --user: 'was' credits every in-period change on issues they held at some point; 'holder' only the changes made while they held the issue. |
+| `--attribution` `[was\|holder\|last-holder]` | `was` | With --user: 'was' credits every in-period change on issues they held at some point; 'holder' only the changes made while they held the issue; 'last-holder' every in-period change on issues they were the last person assigned to before the period ended, so totals add up across people. |
 | `--as` `[points\|seconds\|minutes\|hours\|days\|weeks]` |  | Show time amounts in another time unit. |
 | `--exclude-parents` |  | Leave out issues that have subtasks or child issues, so work estimated on both a story and its subtasks is counted once. |
 | `--workers` `INTEGER` | `8` | Parallel changelog requests. From 1 to 32. |

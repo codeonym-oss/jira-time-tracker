@@ -68,22 +68,63 @@ Jira still shows +01.
 
 ## Whose work counts
 
-`--user` takes `me`, an account id, or part of a name or email. There are two ways to count one
-person's work:
+`--user` takes `me`, an account id, or part of a name or email. There are three ways to count
+one person's work, chosen with `--attribution`:
 
-- **`--attribution was`** (the default for `calculate` and `export`) counts every change made
-  in the period on issues the person held at some point in the period.
-- **`--attribution holder`** counts only the changes made while the person held the issue.
+| `--attribution` | Credits the person with | Use it to | Totals add up across people |
+|---|---|---|---|
+| `was` | every change made in the period on issues they held at some point in the period | see all the movement on the issues someone worked on | no: an issue that changed hands counts for each person who held it |
+| `holder` | only the changes made while they held the issue | see who held the issue as each change was made | yes, with "Unassigned" |
+| `last-holder` | every change made in the period on issues they were the last person assigned to before the period ended | account for each issue's amount once, under one person | yes, with "Unassigned" |
 
 ```console
 $ jtt calculate --from 2026-09-21 --to 2026-09-28 --user daniel
 $ jtt calculate --from 2026-09-21 --to 2026-09-28 --user daniel --attribution holder
+$ jtt calculate --from 2026-09-21 --to 2026-09-28 --user daniel --attribution last-holder
 ```
 
-[`jtt contributions`](../commands/contributions.md) always credits each change to whoever held
-the issue when it happened, and the value an issue was created with to the first person ever
-assigned to it. That way the per-person nets add up to the project's net, "Unassigned"
-included.
+`calculate` and `export` default to `was`.
+[`jtt contributions`](../commands/contributions.md) defaults to `holder`, which gives the value
+an issue was created with to the first person ever assigned to it, and also takes
+`last-holder`. It doesn't take `was`, whose totals can't add up.
+
+### One person per issue
+
+`holder` credits a change made while nobody is assigned to "Unassigned", so the person who did
+the work can lose it. `last-holder` credits an issue's whole net in the period, the value it was
+created with included, to one person:
+
+1. **The last person assigned before the period ended.** Stretches without an assignee are
+   skipped, and the person may have held the issue only before the period.
+2. If nobody had been assigned by then, **the first person ever assigned**.
+3. If nobody was ever assigned, **Unassigned**.
+
+For example, Alice creates an issue with 4 points, clears the estimate and unassigns herself;
+Bob takes it and sets 2 points, then 2.5. The issue's net is 2.5:
+
+| | Alice | Bob |
+|---|---|---|
+| `was` | 2.5 | 2.5 |
+| `holder` | 0 | 2.5 |
+| `last-holder` | 0 | 2.5 |
+
+And if an estimate is set to 0.75 while nobody is assigned, then Bob takes the issue and
+corrects it to 0.5, `holder` gives Bob -0.25 and "Unassigned" 0.75, while `last-holder` gives
+Bob 0.5.
+
+Reassigning an issue after the period ended never moves its credit from one person to another.
+There is one case where a past period can change: an issue nobody had been assigned to by the
+end of the period counts as "Unassigned" until someone is first assigned to it, and then as
+theirs. The project's net stays the same. Before closing a period, assign the issues it left
+under "Unassigned", and keep the exported file.
+
+The people's nets add up to the project's net only together with "Unassigned", which
+`--user` can't select: [`jtt contributions`](../commands/contributions.md) shows everyone at
+once.
+
+```console
+$ jtt contributions --from 2026-09-21 --to 2026-09-28 --attribution last-holder
+```
 
 ## Units
 

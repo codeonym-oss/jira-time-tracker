@@ -155,7 +155,9 @@ def issues_table(
     return table
 
 
-def timelines(reports: list[IssueReport], amounts: Amounts, level: int) -> Tree:
+def timelines(
+    reports: list[IssueReport], amounts: Amounts, level: int, by_last_holder: bool = False
+) -> Tree:
     """Return a tree of each issue's changes, one branch per issue."""
     note = "in-period changes" + (", out-of-period struck through" if level >= 3 else "")
     root = Tree(f"[bold]Timeline[/] [dim]({note})[/]")
@@ -169,6 +171,7 @@ def timelines(reports: list[IssueReport], amounts: Amounts, level: int) -> Tree:
             )
         )
         if r.created_with:
+            credited = r.last_holder if by_last_holder else r.first_holder
             branch.add(
                 Text.assemble(
                     (when(r.created), "cyan"),
@@ -176,7 +179,7 @@ def timelines(reports: list[IssueReport], amounts: Amounts, level: int) -> Tree:
                     (amounts.plain(r.created_with), "bold"),
                     "  ",
                     amounts.signed(r.created_with),
-                    (f"  credited to {r.first_holder.name}", "dim"),
+                    (f"  credited to {credited.name}", "dim"),
                 )
             )
         elif r.created_with is not None:

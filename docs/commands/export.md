@@ -30,7 +30,20 @@ settings: the project, field, unit, period, person and query.
 `daily`
 : One row per day of the period, with its net.
 
-`--user` and `--attribution` work as in [`calculate`](calculate.md). An existing file is kept
+`--user` and `--attribution` work as in [`calculate`](calculate.md). With
+`--attribution last-holder`:
+
+- `issues` and `changes` keep the issues whose last person assigned before the period ended is
+  the `--user`. A change's `holder` is still who held the issue when it was made.
+- `contributions` and `daily` credit by that person, with or without `--user`. With `was` and
+  `holder`, they credit each change to whoever held the issue when it happened.
+
+```console
+$ jtt export -k contributions -o totals.csv --from 2026-09-01 --to 2026-10-01 --attribution last-holder
+$ jtt export -k issues -o daniel.csv --from 2026-09-01 --to 2026-10-01 --user daniel --attribution last-holder
+```
+
+An existing file is kept
 unless you pass `--force`:
 
 ```console
@@ -56,7 +69,7 @@ jtt export [OPTIONS]
 | `--to` `TEXT` |  | Last bound, excluded (YYYY-MM-DD). Defaults to tomorrow, so today counts. |
 | `--period` `TEXT` |  | Named period instead of --from/--to: today, yesterday, this-week, last-week, this-month, last-month, this-quarter, last-quarter, this-year, last-7-days, last-30-days. |
 | `-u`, `--user` `TEXT` |  | Account id, 'me', or part of a name or email. |
-| `--attribution` `[was\|holder]` | `was` | As in calculate. |
+| `--attribution` `[was\|holder\|last-holder]` | `was` | As in calculate. Contributions and daily rows credit by holder, or by last holder with 'last-holder', even without --user. |
 | `--as` `[points\|seconds\|minutes\|hours\|days\|weeks]` |  | Show time amounts in another time unit. |
 | `--exclude-parents` |  | Leave out issues that have subtasks or child issues, so work estimated on both a story and its subtasks is counted once. |
 | `--workers` `INTEGER` | `8` | Parallel changelog requests. From 1 to 32. |

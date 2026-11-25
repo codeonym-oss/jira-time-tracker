@@ -9,7 +9,7 @@ from __future__ import annotations
 import csv
 import json
 import re
-from datetime import date
+from datetime import date, datetime, timedelta
 
 import pytest
 from typer.testing import CliRunner
@@ -17,6 +17,7 @@ from typer.testing import CliRunner
 from jira_time_tracker.cli import app
 from jira_time_tracker.config import Config, SiteConfig, config_dir
 from tests import jira_sim
+from tests.jira_sim.data import ISSUE_TYPES, Event, Issue
 
 runner = CliRunner()
 SITE = jira_sim.generate()
@@ -340,3 +341,269 @@ def test_export_writes_each_format(configured, tmp_path, suffix):
     result, out = jtt("export", "-o", str(target), *period(*WEEK))
     assert result.exit_code == 1
     assert "pass --force" in out
+
+
+# ── last-holder: every issue credited to one person ──────────────────────────
+
+MONTH = ("2026-09-01", "2026-10-01")
+LAST = ("--attribution", "last-holder")
+EVERYONE = {u["displayName"]: u["accountId"] for u in SITE.users}
+
+
+def month_truth(**kwargs) -> jira_sim.Truth:
+    return jira_sim.truth(SITE, "DEMO", *map(date.fromisoformat, MONTH), **kwargs)
+
+
+def shown_net(out: str) -> float:
+    """Return the "Net added" of a report's closing panel, in points."""
+    found = re.search(r"Net added\s+(±0|[+-]?[\d.]+ SP)", out)
+    assert found, out
+    return 0.0 if found[1] == "±0" else float(found[1].removesuffix(" SP"))
+
+
+def shown_people(out: str) -> dict[str, float]:
+    """Return the net of each person in a contributions table, in points."""
+    rows = re.findall(r"^ *([^\d\n│]+?) +(±0|[+-][\d.]+ SP) ", out.split("Statistics")[0], re.M)
+    return {name: 0.0 if net == "±0" else float(net.removesuffix(" SP")) for name, net in rows}
+
+
+@pytest.mark.parametrize("key", PROJECTS)
+@pytest.mark.parametrize(("first", "end"), PERIODS)
+def test_last_holder_nets_match_the_generator_and_add_up(
+    configured, tmp_path, truths, key, first, end
+):
+    truth = truths[key, first, end]
+    factor = PROJECTS[key][2]
+    args = ["-p", key, *period(first, end), *LAST]
+    people = export(tmp_path, "contributions", *args)
+    got = {r["person"]: r["net"] for r in people if r["net"]}
+    assert got == pytest.approx({k: v * factor for k, v in truth.per_last_holder.items() if v})
+    assert sum(r["net"] for r in people) == pytest.approx(truth.net * factor)
+
+
+def test_the_generated_site_exercises_the_last_holder_rule(truths):
+    truth = month_truth()
+    assert truth.per_last_holder != truth.per_person
+    every = [t.per_last_holder for t in truths.values()]
+    assert any(nets.get("Unassigned") for nets in every)
+    first, end = PERIODS[2]
+    first_assigned_later = [
+        i.key
+        for i in SITE.issues
+        if i.key in truths["DEMO", first, end].per_issue
+        and i.assignee
+        and all(since.date() >= date.fromisoformat(end) for since, who in i.holders() if who)
+    ]
+    assert first_assigned_later
+
+
+def test_every_changed_issue_is_credited_to_exactly_one_person(configured, tmp_path):
+    truth = month_truth()
+    credited: list[str] = []
+    for name, account_id in EVERYONE.items():
+        rows = export(tmp_path, "issues", *period(*MONTH), "-u", account_id, *LAST)
+        keys = [r["key"] for r in rows]
+        assert set(keys) == {k for k, who in truth.last_holder.items() if who == name}
+        credited += keys
+    assert len(credited) == len(set(credited))
+    nobodys = {k for k, who in truth.last_holder.items() if who == "Unassigned"}
+    assert set(credited) | nobodys == truth.touched
+    assert set(truth.per_issue) <= truth.touched
+
+
+@pytest.mark.parametrize("flags", [[], ["--exclude-parents"]], ids=["all", "exclude-parents"])
+def test_last_holder_calculate_is_the_persons_row_in_contributions(configured, flags):
+    truth = month_truth(exclude_parents=bool(flags))
+    out = ok("contributions", *period(*MONTH), *LAST, *flags)
+    assert "goes to the last person assigned before the period ended" in out
+    people = shown_people(out)
+    assert {k: v for k, v in people.items() if v} == pytest.approx(
+        {k: v for k, v in truth.per_last_holder.items() if v}
+    )
+    for name, account_id in EVERYONE.items():
+        out = ok("calculate", *period(*MONTH), "-u", account_id, *LAST, *flags)
+        assert f"{name} (last person assigned before the period ended)" in out
+        assert shown_net(out) == pytest.approx(people.get(name, 0))
+        scanned = sum(1 for who in truth.last_holder.values() if who == name)
+        assert f"of {scanned} scanned" in out or f"across {scanned} scanned" in out
+    whole = shown_net(ok("calculate", *period(*MONTH), *flags))
+    assert sum(people.values()) == pytest.approx(whole)
+
+
+@pytest.fixture
+def handed_over():
+    """A site where two people held an issue only outside the period.
+
+    Alice was unassigned from DEMO-901 in August, and Bob assigned to DEMO-902 in October;
+    both issues were estimated in September, while nobody was assigned.
+    """
+    site = jira_sim.generate(now=datetime(2026, 10, 20, 12, 0, tzinfo=jira_sim.NOW.tzinfo))
+    site.issues.clear()
+    alice, bob = site.user("Alice Martin"), site.user("Bob Jensen")
+    site.members["DEMO"] = [site.me, alice, bob]
+
+    def at(month: int, day: int) -> datetime:
+        return datetime(2026, month, day, 10, 0, tzinfo=site.now.tzinfo)
+
+    def issue(number: int, created: datetime, holder: dict | None, *events: Event) -> None:
+        site.issues.append(
+            Issue(
+                key=f"DEMO-{number}",
+                project=site.project("DEMO"),
+                summary=f"Handed over {number}",
+                issue_type=ISSUE_TYPES[1],
+                created=created,
+                created_with=None,
+                assignee_at_create=holder,
+                events=list(events),
+            )
+        )
+
+    issue(
+        901,
+        at(8, 10),
+        alice,
+        Event(at(8, 20), alice, assignee=(alice, None)),
+        Event(at(9, 10), alice, estimate=(None, 3)),
+    )
+    issue(
+        902,
+        at(9, 10),
+        None,
+        Event(at(9, 11), bob, estimate=(None, 5)),
+        Event(at(10, 2), bob, assignee=(None, bob)),
+    )
+    server = jira_sim.start(site)
+    ok("login", "--url", server.url, "--email", jira_sim.EMAIL, "--token", jira_sim.TOKEN)
+    ok("init", "-p", "DEMO", "--field", "customfield_10016", "--unit", "points")
+    yield server
+    server.shutdown()
+    server.server_close()
+
+
+@pytest.mark.parametrize(
+    ("who", "mine", "other", "net"), [("alice", 901, 902, 3), ("bob", 902, 901, 5)]
+)
+def test_last_holder_finds_who_held_the_issue_only_outside_the_period(
+    handed_over, who, mine, other, net
+):
+    args = ["calculate", *period(*MONTH), "--user", who]
+    assert "Nothing changed in the period across 0 scanned issues" in ok(*args)
+    out = ok(*args, *LAST, "-vv")
+    assert shown_net(out) == net
+    assert f"DEMO-{mine}" in out
+    assert f"DEMO-{other}" not in out
+    assert "1 of 1 scanned" in out
+    out = ok("contributions", *period(*MONTH), "--user", who, *LAST, "-vv", "--by", "day")
+    assert shown_net(out) == net
+    assert f"DEMO-{mine}" in out
+    assert f"DEMO-{other}" not in out
+    assert "1 issues scanned" in out
+
+
+def test_last_holder_export_matches_the_truth_for_every_kind(configured, tmp_path):
+    truth = month_truth()
+    name = "Daniel Okafor"
+    mine = {k for k, who in truth.last_holder.items() if who == name}
+    args = [*period(*MONTH), *LAST]
+    one = [*args, "--user", EVERYONE[name]]
+
+    rows = export(tmp_path, "issues", *one)
+    assert {r["key"]: r["delta"] for r in rows} == pytest.approx(
+        {k: truth.per_issue.get(k, 0) for k in mine}
+    )
+    rows = export(tmp_path, "changes", *one)
+    assert len(rows) == sum(n for k, n in truth.changes_of.items() if k in mine)
+    assert {r["key"] for r in rows} == mine & set(truth.changes_of)
+    assert sum(r["delta"] for r in rows) == pytest.approx(truth.per_last_holder[name])
+    (row,) = export(tmp_path, "contributions", *one)
+    assert (row["person"], row["net"]) == (name, pytest.approx(truth.per_last_holder[name]))
+    assert row["issues"] == len(mine & set(truth.changes_of))
+    rows = export(tmp_path, "daily", *one)
+    want = {d.isoformat(): v for (who, d), v in truth.per_last_holder_day.items() if who == name}
+    assert {r["day"]: r["net"] for r in rows if r["net"]} == pytest.approx(
+        {day: v for day, v in want.items() if v}
+    )
+
+    # Without --user: every row, and only the credit of `contributions` changes.
+    assert len(export(tmp_path, "issues", *args)) == len(truth.touched)
+    assert len(export(tmp_path, "changes", *args)) == truth.changes
+    assert sum(r["net"] for r in export(tmp_path, "daily", *args)) == pytest.approx(truth.net)
+
+
+@pytest.mark.parametrize("mode", ["was", "holder"])
+def test_export_per_person_kinds_ignore_the_other_modes(configured, tmp_path, mode):
+    truth = month_truth()
+    rows = export(tmp_path, "contributions", *period(*MONTH), "--attribution", mode)
+    got = {r["person"]: r["net"] for r in rows if r["net"]}
+    assert got == pytest.approx({k: v for k, v in truth.per_person.items() if v})
+
+
+def test_contributions_by_last_holder_for_one_person(configured):
+    truth = month_truth()
+    name = "Daniel Okafor"
+    mine = {k: v for k, v in truth.per_issue.items() if truth.last_holder[k] == name}
+    args = ["contributions", *period(*MONTH), "--user", "daniel", *LAST]
+    out = ok(*args, "-v", "--by", "day")
+    assert shown_people(out)[name] == pytest.approx(truth.per_last_holder[name])
+    assert shown_net(out) == pytest.approx(truth.per_last_holder[name])
+    keys = set(re.findall(r"^\s*(DEMO-\d+)\s", out, re.M))
+    assert keys == {k for k, v in mine.items() if v}
+    assert f"average over {len(keys)}" in out
+    for (who, day), net in truth.per_last_holder_day.items():
+        if who == name and net:
+            assert re.search(rf"{day:%a %d %b}\s+{re.escape(f'{net:+g}')} SP", out)
+
+
+def test_contributions_rejects_was_and_defaults_to_holder(configured):
+    result, out = jtt("contributions", *period(*MONTH), "--attribution", "was")
+    assert result.exit_code == 2
+    assert "'was' is not one of 'holder', 'last-holder'" in out
+    default = ok("contributions", *period(*MONTH))
+    assert "each change goes to whoever held the issue when it happened" in default
+    assert ok("contributions", *period(*MONTH), "--attribution", "holder") == default
+
+
+def test_calculate_notes_that_was_counts_a_handover_for_each_person(configured):
+    note = "an issue that changed hands counts for each person who held it"
+    args = ["calculate", *period(*WEEK)]
+    out = ok(*args, "--user", "me")
+    assert note in out
+    assert "--attribution last-holder" in out
+    for other in ([], ["--user", "me", "--attribution", "holder"], ["--user", "me", *LAST]):
+        assert note not in ok(*args, *other)
+
+
+def test_attribution_has_no_effect_on_calculate_without_user(configured):
+    def report(*args: str) -> str:
+        out = ok("calculate", *period(*WEEK), "-vv", *args)
+        return re.sub(r"Took.*", "", out)
+
+    assert report(*LAST) == report()
+
+
+@pytest.mark.parametrize(("extra", "credited"), [([], "Alice Martin"), (LAST, "Bob Jensen")])
+def test_timelines_say_who_the_created_with_amount_is_credited_to(handed_over, extra, credited):
+    # Alice typed 8 when creating DEMO-903, then handed it to Bob.
+    site = handed_over.site
+    alice, bob = site.user("Alice Martin"), site.user("Bob Jensen")
+    created = datetime(2026, 9, 14, 10, 0, tzinfo=site.now.tzinfo)
+    handover = Event(created + timedelta(minutes=5), alice, assignee=(alice, bob))
+    site.issues.append(
+        Issue(
+            key="DEMO-903",
+            project=site.project("DEMO"),
+            summary="Handed over 903",
+            issue_type=ISSUE_TYPES[1],
+            created=created,
+            created_with=8,
+            assignee_at_create=alice,
+            events=[handover],
+        )
+    )
+    out = ok("contributions", *period(*MONTH), "-vv", *extra)
+    assert f"credited to {credited}" in out
+    if extra:
+        assert f"credited to {credited}" in ok(
+            "calculate", *period(*MONTH), "-u", "bob", "-vv", *extra
+        )

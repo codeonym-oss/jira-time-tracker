@@ -9,9 +9,16 @@ $ jtt contributions --from 2026-09-21 --to 2026-09-28 --by day
 $ jtt contributions --from 2026-09-01 --to 2026-10-01 --by week
 ```
 
-Each change is credited to whoever held the issue when it happened, and the value an issue was
-created with to the first person ever assigned to it, so the per-person nets add up to the
-project's net ([whose work counts](../guide/how-it-counts.md#whose-work-counts)).
+By default, each change is credited to whoever held the issue when it happened, and the value an
+issue was created with to the first person ever assigned to it. With
+`--attribution last-holder`, everything on an issue, the work finished included, is credited to
+the last person assigned before the period ended. Either way the per-person nets add up to the
+project's net, "Unassigned" included
+([whose work counts](../guide/how-it-counts.md#whose-work-counts)).
+
+```console
+$ jtt contributions --from 2026-09-21 --to 2026-09-28 --attribution last-holder
+```
 
 Per person: the net, what they added and removed, their share of all the movement, the issues
 they changed, the issues created in the period they are credited with, and the issues they
@@ -22,6 +29,7 @@ a daily trend and the busiest day.
 
 ```console
 $ jtt contributions --from 2026-09-21 --to 2026-09-28 --user me
+$ jtt contributions --from 2026-09-21 --to 2026-09-28 --user me --attribution last-holder
 ```
 
 `-v` and `-vv` add the issues table and the timelines, as in [`calculate`](calculate.md).
@@ -43,6 +51,7 @@ jtt contributions [OPTIONS]
 | `--period` `TEXT` |  | Named period instead of --from/--to: today, yesterday, this-week, last-week, this-month, last-month, this-quarter, last-quarter, this-year, last-7-days, last-30-days. |
 | `-u`, `--user` `TEXT` |  | Account id, 'me', or part of a name or email. |
 | `--by` `[none\|day\|week]` | `none` | Add a breakdown of the net per day or week. |
+| `--attribution` `[holder\|last-holder]` | `holder` | 'holder' credits each change to whoever held the issue when it happened; 'last-holder' credits everything on an issue to the last person assigned before the period ended. |
 | `--as` `[points\|seconds\|minutes\|hours\|days\|weeks]` |  | Show time amounts in another time unit. |
 | `--exclude-parents` |  | Leave out issues that have subtasks or child issues, so work estimated on both a story and its subtasks is counted once. |
 | `--workers` `INTEGER` | `8` | Parallel changelog requests. From 1 to 32. |
