@@ -58,8 +58,9 @@ def _is_option(param: Param) -> bool:
     return param.param_type_name == "option"
 
 
-# By 0.29.1, Typer had moved a parameter's type (`param.type`, a click type) into `type_descriptor` and
-# its limits onto the parameter itself. These read either, so both versions give one output.
+# By 0.29.1, Typer had moved a parameter's type (`param.type`, a click type) into
+# `type_descriptor`, and its limits onto the parameter itself. These read either, so both
+# versions give one output.
 
 
 def _type_name(param: Param) -> str:
